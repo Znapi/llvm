@@ -16,5 +16,6 @@ travis-ci = { repository = "gsingh93/llvm" }
 appveyor = { repository = "gsingh93/llvm" }
 
 [dependencies]
+type_derive = { path = "src/type_derive" }
 llvm-sys = "40.0.3"
 libc = "*"

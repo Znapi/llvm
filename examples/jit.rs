@@ -1,37 +1,38 @@
-extern crate llvm;
-use llvm::*;
+extern crate llvm_sys;
+#[macro_use]extern crate llvm;
+
 use std::mem;
 
-fn main() {
+use llvm_sys::core::LLVMGetParam;
 
-    let context = Context::new();
-    let mut module = context.module_create_with_name("sum");
+fn main() {
+    let mut context = llvm::Context::new();
+    let mut module = context.create_module_with_name(llvm_str!("my module"));
     let mut builder = context.create_builder();
 
-    let function_type = llvm::function_type(
-        i64::get_type_in_context(&context),
-        vec![
-            i64::get_type_in_context(&context),
-            i64::get_type_in_context(&context),
-            i64::get_type_in_context(&context)
-        ],
-        false);
-    let mut func = module.add_function(function_type, "fname");
-    let bb = context.append_basic_block(&mut func, "fname");
+    let func_name = llvm_str!("add");
+    let func = module.add_function(
+        llvm::types::Function::new(
+            context.i64_type(),
+            &[
+                context.i64_type(),
+                context.i64_type(),
+            ],
+            false,
+        ),
+        func_name,
+    );
+    let bb = context.append_basic_block(func, func_name);
     builder.position_at_end(bb);
 
     // get the function's arguments
-    let x = func.get_param(0).unwrap();
-    let y = func.get_param(1).unwrap();
-    let z = func.get_param(2).unwrap();
+    unsafe {
+        let x = LLVMGetParam(func, 0);
+        let y = LLVMGetParam(func, 1);
 
-    let b = context.cons(20i8);
-
-    let s1 = builder.build_add(x, b, "s1");
-    let s2 = builder.build_add(y, s1, "s2");
-    let s3 = builder.build_add(z, s2, "s3");
-    builder.build_ret(s3);
-
+        let s1 = builder.build_add(x, y, llvm_str!("s1"));
+        builder.build_ret(s1);
+    }
     module.dump();
 
     llvm::link_in_mcjit();
@@ -39,16 +40,15 @@ fn main() {
     llvm::initialize_native_asm_printer();
 
     let ee = llvm::ExecutionEngine::create_for_module(&module).unwrap();
-    let addr = ee.get_function_address("fname").unwrap();
+    let addr = ee.get_function_address(func_name).unwrap();
 
     unsafe {
-        let f: extern "C" fn(u64, u64, u64) -> u64 = mem::transmute(addr);
+        let f: extern "C" fn(u64, u64) -> u64 = mem::transmute(addr);
 
-        let x: u64 = 1;
+        let x: u64 = 10;
         let y: u64 = 2;
-        let z: u64 = 3;
-        let res = f(x, y, z);
+        let res = f(x, y);
 
-        println!("{} + {} + {} = {}", x, y, z, res);
+        println!("{} + {} = {}", x, y, res);
     }
 }

@@ -1,37 +1,109 @@
-use std::ffi::{CString, CStr};
-use llvm_sys::target_machine::*;
-use llvm_sys::target::*;
+use std::mem;
+use std::ptr;
+
 use super::*;
+
+// Re-define enums in a more idiomatic way here.
+// Unfortunately, they are only interchangable with their llvm-sys counterparts
+// with a mem::transmute().
+#[derive(Copy, Clone)]
+#[repr(C)]
+/// LLVMCodeGenOptLevel
+pub enum CodeGenOptLevel {
+    None = 0,
+    Less = 1,
+    Default = 2,
+    Aggressive = 3,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+/// LLVMRelocMode
+pub enum RelocMode {
+    Default = 0,
+    Static = 1,
+    PIC = 2,
+    DynamicNoPic = 3,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+/// LLVMCodeModel
+pub enum CodeModel {
+    Default = 0,
+    JITDefault = 1,
+    Small = 2,
+    Kernel = 3,
+    Medium = 4,
+    Large = 5,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+/// LLVMCodeGenFileType
+pub enum CodeGenFileType {
+    AssemblyFile = 0,
+    ObjectFile = 1,
+}
 
 #[derive(Debug)]
 pub struct Target {
     ptr: LLVMTargetRef,
 }
+
 impl_llvm_ref!(Target, LLVMTargetRef);
 
 impl Target {
-    pub fn from_name(name: &str) -> Option<Target> {
-        let c_name = CString::new(name).unwrap();
-        let res = unsafe {
-            LLVMGetTargetFromName(c_name.as_ptr())
-        };
+    // LLVMGetTargetFromName returns 0 for failure, but because it isn't using
+    // error messages, this function just uses an Option rather than a Result
+    // to signify failure.
+    pub fn from_name(name: &AsRef<Str>) -> Option<Target> {
+        let res = unsafe { LLVMGetTargetFromName(name.as_ref().as_ptr()) };
 
         if res.is_null() {
             None
         } else {
-            Some(Target {
-                ptr: res
-            })
+            unsafe { Some(Self::from_raw(res)) }
         }
     }
-    pub fn create_target_machine(&self,
-                                 triple: &str,
-                                 cpu: &str,
-                                 features: &str,
-                                 level: LLVMCodeGenOptLevel,
-                                 reloc: LLVMRelocMode,
-                                 model: LLVMCodeModel) -> TargetMachine {
-        TargetMachine::new(self, triple, cpu, features, level, reloc, model)
+
+    pub fn from_triple(triple: &AsRef<Str>) -> Result<Target> {
+        unsafe {
+            let mut target_ptr: LLVMTargetRef = mem::uninitialized();
+            let mut err_msg = ptr::null_mut::<i8>();
+            LLVMGetTargetFromTriple(
+                triple.as_ref().as_ptr(),
+                &mut target_ptr,
+                &mut err_msg as *mut *mut i8,
+            );
+            if target_ptr.is_null() {
+                Err(llvm::String::from_mut(err_msg))
+            } else {
+                Ok(Self::from_raw(target_ptr))
+            }
+        }
+    }
+
+    pub fn create_target_machine(
+        &self,
+        triple: &AsRef<Str>,
+        cpu: &AsRef<Str>,
+        features: &AsRef<Str>,
+        level: CodeGenOptLevel,
+        reloc: RelocMode,
+        model: CodeModel,
+    ) -> TargetMachine {
+        unsafe {
+            TargetMachine::new(
+                self,
+                triple,
+                cpu,
+                features,
+                mem::transmute(level),
+                mem::transmute(reloc),
+                mem::transmute(model),
+            )
+        }
     }
 }
 
@@ -40,67 +112,142 @@ pub struct TargetMachine {
     ptr: LLVMTargetMachineRef,
 }
 
+impl_llvm_ref!(TargetMachine, LLVMTargetMachineRef);
+
 impl TargetMachine {
-    // TODO: create wrappers for all these types
-    pub fn new(target: &Target,
-               triple: &str,
-               cpu: &str,
-               features: &str,
-               level: LLVMCodeGenOptLevel,
-               reloc: LLVMRelocMode,
-               model: LLVMCodeModel) -> TargetMachine {
-
-        let c_triple = CString::new(triple).unwrap();
-        let c_cpu = CString::new(cpu).unwrap();
-        let c_features = CString::new(features).unwrap();
-        let ptr = unsafe {
-            LLVMCreateTargetMachine(
-                target.ptr,
-                c_triple.as_ptr(),
-                c_cpu.as_ptr(),
-                c_features.as_ptr(),
-                level,
-                reloc,
-                model
-            )
-        };
-
+    pub fn new(
+        target: &Target,
+        triple: &AsRef<Str>,
+        cpu: &AsRef<Str>,
+        features: &AsRef<Str>,
+        level: CodeGenOptLevel,
+        reloc: RelocMode,
+        model: CodeModel,
+    ) -> TargetMachine {
         TargetMachine {
-            ptr: ptr,
+            ptr: unsafe {
+                LLVMCreateTargetMachine(
+                    target.ptr,
+                    triple.as_ref().as_ptr(),
+                    cpu.as_ref().as_ptr(),
+                    features.as_ref().as_ptr(),
+                    mem::transmute(level),
+                    mem::transmute(reloc),
+                    mem::transmute(model),
+                )
+            },
         }
     }
 
-    pub fn emit_to_file(&mut self,
-                        module: &mut Module,
-                        path: &str,
-                        file_type: LLVMCodeGenFileType) -> Result<(), &'static str> {
-            let c_path = CString::new(path).unwrap();
-            let mut em: usize = 0;
-            let em_ptr: *mut usize = &mut em;
-            unsafe {
-                LLVMTargetMachineEmitToFile(self.ptr,
-                                            module.ptr,
-                                            c_path.as_ptr() as *mut i8,
-                                            file_type,
-                                            em_ptr as *mut *mut i8);
-                if em == 0 { // no error message was set
-                    Ok(())
-                } else {
-                    Err(c_str_to_str!(em as *const i8))
-                }
+    pub fn create_data_layout(&self) -> TargetData {
+        unsafe { TargetData { ptr: LLVMCreateTargetDataLayout(self.as_raw()) } }
+    }
+
+    pub fn emit_to_file(
+        &mut self,
+        module: &mut Module,
+        path: &AsRef<Str>,
+        file_type: CodeGenFileType,
+    ) -> Result<()> {
+        let mut err_msg = ptr::null_mut::<i8>();
+        unsafe {
+            LLVMTargetMachineEmitToFile(
+                self.as_mut(),
+                module.as_mut(),
+                path.as_ref().as_ptr() as *mut i8,
+                mem::transmute(file_type),
+                &mut err_msg as *mut *mut i8,
+            );
+            if err_msg.is_null() {
+                // no error message was set
+                Ok(())
+            } else {
+                Err(llvm::String::from_mut(err_msg))
             }
+        }
     }
 }
 
-pub fn get_default_target_triple<'a>() -> &'a str {
-    unsafe {
-        c_str_to_str!(LLVMGetDefaultTargetTriple())
+impl Drop for TargetMachine {
+    fn drop(&mut self) {
+        unsafe {
+            LLVMDisposeTargetMachine(self.as_mut());
+        }
     }
 }
+
+#[derive(Debug)]
+pub struct TargetData {
+    ptr: LLVMTargetDataRef,
+}
+
+impl_llvm_ref!(TargetData, LLVMTargetDataRef);
+
+impl Drop for TargetData {
+    fn drop(&mut self) {
+        unsafe {
+            LLVMDisposeTargetData(self.as_mut());
+        }
+    }
+}
+
+/// Returns a string in the format of
+///   CPU_TYPE-VENDOR-OPERATING_SYSTEM
+/// or
+///   CPU_TYPE-VENDOR-KERNEL-OPERATING_SYSTEM
+pub fn get_default_target_triple() -> llvm::String {
+    unsafe { llvm::String::from_mut(LLVMGetDefaultTargetTriple()) }
+}
+
+pub fn initialize_all_target_infos() {
+    unsafe {
+        LLVM_InitializeAllTargetInfos();
+    }
+}
+
+pub fn initialize_all_targets() {
+    unsafe {
+        LLVM_InitializeAllTargets();
+    }
+}
+
+pub fn initialize_all_target_mcs() {
+    unsafe {
+        LLVM_InitializeAllTargetMCs();
+    }
+}
+
+pub fn initialize_all_asm_printers() {
+    unsafe {
+        LLVM_InitializeAllAsmPrinters();
+    }
+}
+
+pub fn initialize_all_asm_parsers() {
+    unsafe {
+        LLVM_InitializeAllAsmParsers();
+    }
+}
+
+pub fn initialize_all_disassemblers() {
+    unsafe {
+        LLVM_InitializeAllDisassemblers();
+    }
+}
+
+// these LLVM_InitializeNative* functions all return 1 on failure, but failure
+// means some macros were left undefined by the LLVM build, so we just ignore
+// it.
 
 pub fn initialize_native_target() {
     unsafe {
         LLVM_InitializeNativeTarget();
+    }
+}
+
+pub fn initialize_native_asm_parser() {
+    unsafe {
+        LLVM_InitializeNativeAsmParser();
     }
 }
 
@@ -110,3 +257,8 @@ pub fn initialize_native_asm_printer() {
     }
 }
 
+pub fn initialize_native_disassembler() {
+    unsafe {
+        LLVM_InitializeNativeDisassembler();
+    }
+}

@@ -1,0 +1,13 @@
+[package]
+name = "type_derive"
+version = "0.0.0"
+authors = ["Zachary Napier"]
+workspace = "../.."
+
+[lib]
+proc-macro = true
+path = "type_derive.rs"
+
+[dependencies]
+syn = "0.11.11"
+quote = "0.3.15"
