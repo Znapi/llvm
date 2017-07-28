@@ -15,6 +15,7 @@ macro_rules! c_str_to_str {
 
 #[macro_use]
 mod macros;
+#[macro_use] mod string;
 mod context;
 mod types;
 mod builder;
@@ -26,6 +27,7 @@ mod execution_engine;
 mod value;
 
 // TODO: This was to maintain compatiblity, we should remove this
+pub use string::*;
 pub use context::*;
 pub use types::*;
 pub use builder::*;
@@ -42,3 +44,10 @@ pub fn set_value_name(val: LLVMValueRef, name: &str) {
         llvm::LLVMSetValueName(val, c_name.as_ptr());
     }
 }
+// hacky namespacing follows:
+use string as llvm; // so we can do llvm::String in submodules to refer to string::String
+//use std::string::String; // so that plain String in submodules still refers to std::string::String
+use string::Str;
+
+/// Convenience type
+pub type Result<T> = std::result::Result<T, llvm::String>;
