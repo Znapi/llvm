@@ -141,9 +141,12 @@ impl AsRef<Str> for std::ffi::CString {
 /// ```
 /// let mut my_module = context.create_module_with_name(llvm_str!("my module"));
 /// ```
+// TODO: when stmt_expr_attributes (rust issue #15701) is finished, uncomment
+// the `#[allow(unused_unsafe)]` below
 #[macro_export]
 macro_rules! llvm_str {
     ($s:expr) => {
+        //#[allow(unused_unsafe)]
         unsafe {
             ::std::mem::transmute::<*const u8, &'static llvm::Str>(
                 concat!($s, "\0").as_ptr()
