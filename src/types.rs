@@ -57,14 +57,9 @@ impl Type {
         unsafe { LLVMDumpType(self.as_raw()) };
     }*/
 
-    // TODO: implement `context(&self) -> Context` (see llvm::Type::getContext)
-
     pub fn kind(&self) -> Kind {
         unsafe { transmute(LLVMGetTypeKind(self.as_raw())) }
     }
-
-    // TODO: Implement all the is*Ty() variants and related methods (see
-    // llvm/IR/Type.h lines 139-249)
 
     pub fn is_sized(&self) -> bool {
         unsafe { LLVMTypeIsSized(self.as_raw()) == 1 }
