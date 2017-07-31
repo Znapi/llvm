@@ -94,7 +94,7 @@ impl String {
 impl Display for String {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         <Str as Display>::fmt(self.as_ref(), f)
-     }
+    }
 }
 
 impl Debug for String {
@@ -138,8 +138,12 @@ impl AsRef<Str> for std::ffi::CString {
 ///
 /// # Example
 ///
-/// ```
+/// ```rust
+/// #[macro_use]extern crate llvm;
+/// # fn main() {
+/// # let mut context = llvm::Context::new();
 /// let mut my_module = context.create_module_with_name(llvm_str!("my module"));
+/// # }
 /// ```
 // TODO: when stmt_expr_attributes (rust issue #15701) is finished, uncomment
 // the `#[allow(unused_unsafe)]` below

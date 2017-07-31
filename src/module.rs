@@ -11,19 +11,15 @@ impl_llvm_ref!(Module, LLVMModuleRef);
 
 impl Module {
     pub fn dump(&self) {
-        unsafe { LLVMDumpModule(self.as_raw()); }
+        unsafe { LLVMDumpModule(self.as_raw()) };
     }
 
     pub fn set_data_layout_str(&mut self, data_layout_str: &AsRef<Str>) {
-        unsafe {
-            LLVMSetDataLayout(self.as_mut(), data_layout_str.as_ref().as_ptr());
-        }
+        unsafe { LLVMSetDataLayout(self.as_mut(), data_layout_str.as_ref().as_ptr()) };
     }
 
     pub fn set_data_layout(&mut self, data_layout: &mut TargetData) {
-        unsafe {
-            LLVMSetModuleDataLayout(self.as_mut(), data_layout.as_raw());
-        }
+        unsafe { LLVMSetModuleDataLayout(self.as_mut(), data_layout.as_raw()) };
     }
 
     pub fn get_target_triple(&self) -> &'static llvm::Str {
@@ -31,20 +27,12 @@ impl Module {
     }
 
     pub fn set_target_triple(&mut self, triple: &AsRef<Str>) {
-        unsafe {
-            LLVMSetTarget(self.as_mut(), triple.as_ref().as_ptr());
-        }
+        unsafe { LLVMSetTarget(self.as_mut(), triple.as_ref().as_ptr()) };
     }
 
     pub fn add_function(&mut self, func_ty: &types::Function, name: &AsRef<Str>) -> LLVMValueRef {
-        unsafe { LLVMAddFunction(self.as_mut(), name.as_ref().as_ptr(), func_ty.as_raw()) }
+        unsafe { LLVMAddFunction(self.as_mut(), name.as_ref().as_ptr(), func_ty.into()) }
     }
-
-    /*pub fn get_named_function(&mut self, name: &AsRef<Str>) -> Option<LLVMValueRef> {
-        let res = unsafe { LLVMGetNamedFunction(self.as_raw(), name.as_ref().as_ptr()) };
-
-        if res.is_null() { None } else { Some(res) }
-    }*/
 
     pub fn print_to_file(&self, path: &AsRef<Str>) -> Result<()> {
         let mut em: usize = 0;
@@ -79,8 +67,6 @@ impl fmt::Display for Module {
 
 impl Drop for Module {
     fn drop(&mut self) {
-        unsafe {
-            LLVMDisposeModule(self.as_mut());
-        }
+        unsafe { LLVMDisposeModule(self.as_mut()) };
     }
 }

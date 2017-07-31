@@ -1,5 +1,4 @@
 //! A safe Rust API to LLVM.
-#[macro_use] extern crate type_derive;
 extern crate libc;
 extern crate llvm_sys;
 
@@ -57,22 +56,22 @@ use llvm_sys::target::*;
 use llvm_sys::target_machine::*;
 
 #[macro_use] mod string;
+pub mod types;
 mod context;
 mod builder;
 mod module;
 mod pass_manager;
 mod target;
 mod execution_engine;
-pub mod types;
 
 pub use string::*;
+pub use types::{Type, ContextType};
 pub use context::*;
 pub use builder::*;
 pub use module::*;
 pub use pass_manager::*;
 pub use target::*;
 pub use execution_engine::*;
-pub use types::Type;
 
 // hacky namespacing follows:
 use string as llvm; // so we can do llvm::String in submodules to refer to string::String
