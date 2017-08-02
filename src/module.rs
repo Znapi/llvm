@@ -18,7 +18,7 @@ impl Module {
         unsafe { LLVMSetDataLayout(self.as_mut(), data_layout_str.as_ref().as_ptr()) };
     }
 
-    pub fn set_data_layout(&mut self, data_layout: &mut TargetData) {
+    pub fn set_data_layout(&mut self, data_layout: &TargetData) {
         unsafe { LLVMSetModuleDataLayout(self.as_mut(), data_layout.as_raw()) };
     }
 
