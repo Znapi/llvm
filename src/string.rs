@@ -22,7 +22,7 @@ pub struct Str {
 impl Str {
     /// 0-cost cast to an &llvm::Str from a pointer to a C-style string that
     /// must originate from LLVM.
-    pub(crate) unsafe fn from_ptr<'a>(ptr: *const i8) -> &'a Str {
+    pub unsafe fn from_ptr<'a>(ptr: *const i8) -> &'a Str {
         transmute(ptr)
     }
 
@@ -139,8 +139,11 @@ impl AsRef<Str> for std::ffi::CString {
 }
 
 /// Turn non-null terminated string literal into null-terminated
-/// `&'static llvm::Str`. Note that this won't work in static variables,
-/// unless you use the crate `lazy_static`.
+/// `&'static llvm::Str`. Note that this won't work in static variables, but it
+/// does work with the `lazy_static` crate.
+///
+/// Passing no argument creates an empty string, and is equivalent to
+/// `llvm_str!("")`.
 ///
 /// # Example
 ///
@@ -157,10 +160,10 @@ impl AsRef<Str> for std::ffi::CString {
 macro_rules! llvm_str {
     ($s:expr) => {
         //#[allow(unused_unsafe)]
-        unsafe {
-            ::std::mem::transmute::<*const u8, &'static llvm::Str>(
-                concat!($s, "\0").as_ptr()
-            )
-        }
+        unsafe { llvm::Str::from_ptr(concat!($s, "\0").as_ptr() as *mut i8) }
+    };
+    () => {
+        //#[allow(unused_unsafe)]
+        unsafe { llvm::Str::from_ptr(&mut 0i8 as *mut i8) }
     }
 }

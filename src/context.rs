@@ -28,6 +28,7 @@ impl Context {
         }
     }
 
+    /// Specifying a name is optional; just pass an empty string
     pub fn append_basic_block(
         &mut self,
         func: LLVMValueRef,
