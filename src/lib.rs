@@ -71,6 +71,7 @@ pub use context::*;
 pub use types::{Type, ContextType};
 pub use constant::*;
 pub use builder::*;
+pub use builder::IntPredicate;
 pub use module::*;
 pub use pass_manager::*;
 pub use target::*;

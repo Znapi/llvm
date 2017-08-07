@@ -1,9 +1,31 @@
+use std::mem::transmute;
+
 use super::*;
+
+#[derive(Debug)]
+#[repr(C)]
+pub enum IntPredicate {
+    Eq = 32,
+    Ne,
+    Ugt,
+    Uge,
+    Ult,
+    Ule,
+    Sgt,
+    Sge,
+    Slt,
+    Sle,
+}
 
 macro_rules! build_named_ops {
     ($($(#[$attr:meta])*pub fn $name:ident($($argn:ident: $argty:ty),*) { $llvm_fn:path })*) => {
+        /// Specifying a name is optional; just pass an empty string
         $($(#[$attr])*pub fn $name(&mut self, $($argn: $argty),*, name: &AsRef<Str>) -> LLVMValueRef {
-            unsafe { $llvm_fn(self.as_mut(), $($argn),*, name.as_ref().as_ptr()) }
+            unsafe {
+                $llvm_fn(self.as_mut(),
+                         $($argn),*,
+                         name.as_ref().as_ptr())
+            }
         })*
     }
 }
@@ -62,12 +84,12 @@ pub fn build_ashr, LLVMBuildAShr, lhs: LLVMValueRef, rhs: LLVMValueRef);
 
 pub fn build_and, LLVMBuildAnd, lhs: LLVMValueRef, rhs: LLVMValueRef);
 pub fn build_or, LLVMBuildOr, lhs: LLVMValueRef, rhs: LLVMValueRef);
-pub fn build_xor, LLVMBuildXor, lhs: LLVMValueRef, rhs: LLVMValueRef);
+pub fn build_xor, LLVMBuildXor, lhs: LLVMValueRef, rhs: LLVMValueRef);*/
 
 // TODO: LLVMBuildBinOp
 
-pub fn build_neg, LLVMBuildNeg, v: LLVMValueRef);
-pub fn build_fneg, LLVMBuildFNeg, v: LLVMValueRef);
+        pub fn build_neg(v: LLVMValueRef) { LLVMBuildNeg }
+/*pub fn build_fneg, LLVMBuildFNeg, v: LLVMValueRef);
 pub fn build_nswneg, LLVMBuildNSWNeg, v: LLVMValueRef);
 pub fn build_nuwneg, LLVMBuildNUWNeg, v: LLVMValueRef);
 
@@ -86,7 +108,7 @@ pub fn build_load, LLVMBuildLoad, ptr: LLVMValueRef);
 build_op!(build_store, LLVMBuildStore,  val: LLVMValueRef, pval: LLVMValueRef);
 
 pub fn build_trunc, LLVMBuildTrunc, val: LLVMValueRef, dest_ty: LLVMTypeRef);
-pub fn build_zext, LLVMBuildZExt, val: LLVMValueRef, dest_ty: LLVMTypeRef);
+pub fn build_zext(val: LLVMValueRef, dest_ty: &Type) { LLVMBuildZExt }
 pub fn build_sext, LLVMBuildSExt, val: LLVMValueRef, dest_ty: LLVMTypeRef);
 pub fn build_fp_to_ui, LLVMBuildFPToUI, val: LLVMValueRef, dest_ty: LLVMTypeRef);
 pub fn build_fp_to_si, LLVMBuildFPToSI, val: LLVMValueRef, dest_ty: LLVMTypeRef);
@@ -115,15 +137,6 @@ pub fn build_cast, LLVMBuildCast, op: LLVMOpcode,
 pub fn build_pointer_cast, LLVMBuildPointerCast, val: LLVMValueRef, dest_ty: LLVMTypeRef);
 pub fn build_int_cast, LLVMBuildIntCast, val: LLVMValueRef, dest_ty: LLVMTypeRef);
 pub fn build_fpcast, LLVMBuildFPCast, val: LLVMValueRef, dest_ty: LLVMTypeRef);
-
-
-pub fn build_icmp, LLVMBuildICmp, op: LLVMIntPredicate,
-                                               lhs: LLVMValueRef,
-                                               rhs: LLVMValueRef);
-
-pub fn build_fcmp, LLVMBuildFCmp, op: LLVMRealPredicate,
-                                               lhs: LLVMValueRef,
-                                               rhs: LLVMValueRef);
 
 pub fn build_phi, LLVMBuildPhi, ty: LLVMTypeRef);
 //build_call is manually defined in impl Builder
@@ -169,6 +182,42 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
                              else_: LLVMBasicBlockRef) { LLVMBuildCondBr }
     }
 
+    pub fn build_zext(
+        &mut self,
+        val: LLVMValueRef,
+        dst_ty: &Type,
+        name: &AsRef<Str>,
+    ) -> LLVMValueRef {
+        unsafe {
+            LLVMBuildZExt(
+                self.as_mut(),
+                val,
+                dst_ty.into(),
+                name.as_ref().as_ptr(),
+            )
+        }
+    }
+
+    pub fn build_icmp(
+        &mut self,
+        op: IntPredicate,
+        lhs: LLVMValueRef,
+        rhs: LLVMValueRef,
+        name: &AsRef<Str>,
+    ) -> LLVMValueRef {
+        unsafe {
+            LLVMBuildICmp(
+                self.as_mut(),
+                transmute(op),
+                lhs,
+                rhs,
+                name.as_ref().as_ptr(),
+            )
+        }
+    }
+
+    // TODO: pub fn build_fcmp
+
     // TODO: check which methods should borrow mutably
 
     pub fn position_at_end(&mut self, basic_block: LLVMBasicBlockRef) {
@@ -180,14 +229,14 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
     pub fn build_call(
         &mut self,
         func: LLVMValueRef,
-        mut args: Vec<LLVMValueRef>,
+        args: &[LLVMValueRef],
         name: &AsRef<Str>,
     ) -> LLVMValueRef {
         unsafe {
             LLVMBuildCall(
                 self.as_mut(),
                 func,
-                args.as_mut_ptr(),
+                args.as_ptr() as *mut LLVMValueRef,
                 args.len() as u32,
                 name.as_ref().as_ptr(),
             )
@@ -198,9 +247,18 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
         unsafe { LLVMBuildGlobalString(self.as_raw(), s.as_ref().as_ptr(), name.as_ref().as_ptr()) }
     }
 
-    pub fn build_global_string_ptr(&self, s: &AsRef<Str>, name: &AsRef<Str>) -> LLVMValueRef {
+    // NOTE: requires a function and basic block to be present
+    pub fn build_global_string_ptr(
+        &self,
+        s: &AsRef<Str>,
+        name: &AsRef<Str>,
+    ) -> LLVMValueRef {
         unsafe {
-            LLVMBuildGlobalStringPtr(self.as_raw(), s.as_ref().as_ptr(), name.as_ref().as_ptr())
+            LLVMBuildGlobalStringPtr(
+                self.as_raw(),
+                s.as_ref().as_ptr(),
+                name.as_ref().as_ptr(),
+            )
         }
     }
 
