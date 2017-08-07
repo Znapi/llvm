@@ -11,6 +11,8 @@ use std::fmt;
 use std::mem::transmute;
 use std::ops::Deref;
 
+use libc::c_ulonglong;
+
 use llvm_sys::prelude::*;
 use llvm_sys::core::*;
 use llvm_sys::*;
@@ -129,12 +131,6 @@ impl Type {
         transmute::<LLVMTypeRef, &Self>(ptr)
     }
 
-    /// Return true if the type has a known sized. For subclasses of `Type`
-    /// the result of this method can be assumed.
-    pub fn is_sized(&self) -> bool {
-        unsafe { LLVMTypeIsSized(self.into()) == 1 }
-    }
-
     /// Downcast an `&Type`, returning a variant of `Kind` that encodes the
     /// type information and contains the result of the downcast.
     ///
@@ -196,6 +192,16 @@ impl Type {
         pub fn try_as_x86_mmx -> X86_MMX
         pub fn try_as_token -> Token
     }
+
+    /// Return true if the type has a known sized. For subclasses of `Type`
+    /// the result of this method can be assumed.
+    pub fn is_sized(&self) -> bool {
+        unsafe { LLVMTypeIsSized(self.into()) == 1 }
+    }
+
+    pub fn pointer(&self) -> &Pointer {
+        unsafe { Pointer::from_raw(LLVMPointerType(self.into(), 0)) }
+    }
 }
 
 // This counts as the llvm::Type::print method from the C++ API, though the C++
@@ -226,10 +232,10 @@ impl PartialEq for Type {
 
 impl Eq for Type {}
 
-macro_rules! impl_type {
-    ($t:ty) => {
+macro_rules! subclass {
+    ($t:ty, $super:ty) => {
         impl Deref for $t {
-            type Target = Type;
+            type Target = $super;
 
             fn deref(&self) -> &Self::Target {
                 unsafe { transmute::<&Self, &Self::Target>(self) }
@@ -264,6 +270,10 @@ macro_rules! impl_type {
     }
 }
 
+macro_rules! impl_type {
+    ($t:ty) => { subclass!($t, Type); }
+}
+
 // Base types:
 
 /// Type with no size
@@ -281,6 +291,12 @@ impl_type!(Float);
 /// 64 bit floating point type
 pub struct Double(Type);
 impl_type!(Double);
+
+impl Double {
+    pub fn constant<'a>(&'a self, val: f64) -> &'a Constant {
+        unsafe { Constant::from_raw(LLVMConstReal(self.into(), val)) }
+    }
+}
 
 /// 80 bit floating point type (X87)
 #[allow(non_camel_case_types)]
@@ -319,9 +335,39 @@ pub struct Integer(Type);
 impl_type!(Integer);
 
 impl Integer {
+    fn constant<'a>(&'a self, val: c_ulonglong, sign_extend: bool) -> &'a Constant {
+        unsafe {
+            Constant::from_raw(LLVMConstInt(
+                self.into(),
+                val,
+                if sign_extend { 1 } else { 0 },
+            ))
+        }
+    }
+
     /// Returns the bit width of an `Integer` type.
     pub fn width(&self) -> u32 {
         unsafe { LLVMGetIntTypeWidth(self.into()) }
+    }
+}
+
+/// Signed integer
+pub struct Int(Integer);
+subclass!(Int, Integer);
+
+impl Int {
+    pub fn constant<'a>(&'a self, val: i64) -> &'a Constant {
+        self.deref().constant(val as c_ulonglong, true)
+    }
+}
+
+/// Unsinged integer
+pub struct UInt(Integer);
+subclass!(UInt, Integer);
+
+impl UInt {
+    pub fn constant<'a>(&'a self, val: u64) -> &'a Constant {
+        self.deref().constant(val as c_ulonglong, true)
     }
 }
 
@@ -390,17 +436,17 @@ macro_rules! impl_context_type {
     }
 }
 
-impl_context_type!(bool => Integer, LLVMInt1TypeInContext);
+impl_context_type!(bool => UInt, LLVMInt1TypeInContext);
 // This might actually not be true, Not sure
-impl_context_type!(char => Integer, LLVMInt8TypeInContext);
-impl_context_type!(u8 => Integer, LLVMInt8TypeInContext);
-impl_context_type!(u16 => Integer, LLVMInt16TypeInContext);
-impl_context_type!(u32 => Integer, LLVMInt32TypeInContext);
-impl_context_type!(u64 => Integer, LLVMInt64TypeInContext);
-impl_context_type!(i8 => Integer, LLVMInt8TypeInContext);
-impl_context_type!(i16 => Integer, LLVMInt16TypeInContext);
-impl_context_type!(i32 => Integer, LLVMInt32TypeInContext);
-impl_context_type!(i64 => Integer, LLVMInt64TypeInContext);
+impl_context_type!(char => Int, LLVMInt8TypeInContext);
+impl_context_type!(u8 => UInt, LLVMInt8TypeInContext);
+impl_context_type!(u16 => UInt, LLVMInt16TypeInContext);
+impl_context_type!(u32 => UInt, LLVMInt32TypeInContext);
+impl_context_type!(u64 => UInt, LLVMInt64TypeInContext);
+impl_context_type!(i8 => Int, LLVMInt8TypeInContext);
+impl_context_type!(i16 => Int, LLVMInt16TypeInContext);
+impl_context_type!(i32 => Int, LLVMInt32TypeInContext);
+impl_context_type!(i64 => Int, LLVMInt64TypeInContext);
 impl_context_type!(f32 => Float, LLVMFloatTypeInContext);
 impl_context_type!(f64 => Double, LLVMDoubleTypeInContext);
 //TODO: Function Types

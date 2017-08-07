@@ -42,39 +42,37 @@ impl Context {
         unsafe { types::Void::from_raw(LLVMVoidTypeInContext(self.as_raw())) }
     }
 
-    pub fn i1_type(&self) -> &types::Integer {
-        unsafe { types::Integer::from_raw(LLVMInt1TypeInContext(self.as_raw())) }
+    pub fn double_type(&self) -> &types::Double {
+        unsafe { types::Double::from_raw(LLVMDoubleTypeInContext(self.as_raw())) }
     }
 
-    pub fn i8_type(&self) -> &types::Integer {
-        unsafe { types::Integer::from_raw(LLVMInt8TypeInContext(self.as_raw())) }
+    pub fn i1_type(&self) -> &types::Int {
+        unsafe { types::Int::from_raw(LLVMInt1TypeInContext(self.as_raw())) }
     }
 
-    pub fn i16_type(&self) -> &types::Integer {
-        unsafe { types::Integer::from_raw(LLVMInt16TypeInContext(self.as_raw())) }
+    pub fn i8_type(&self) -> &types::Int {
+        unsafe { types::Int::from_raw(LLVMInt8TypeInContext(self.as_raw())) }
     }
 
-    pub fn i32_type(&self) -> &types::Integer {
-        unsafe { types::Integer::from_raw(LLVMInt32TypeInContext(self.as_raw())) }
+    pub fn i16_type(&self) -> &types::Int {
+        unsafe { types::Int::from_raw(LLVMInt16TypeInContext(self.as_raw())) }
     }
 
-    pub fn i64_type(&self) -> &types::Integer {
-        unsafe { types::Integer::from_raw(LLVMInt64TypeInContext(self.as_raw())) }
+    pub fn i32_type(&self) -> &types::Int {
+        unsafe { types::Int::from_raw(LLVMInt32TypeInContext(self.as_raw())) }
     }
 
-    pub fn i128_type(&self) -> &types::Integer {
-        unsafe { types::Integer::from_raw(LLVMInt128TypeInContext(self.as_raw())) }
+    pub fn i64_type(&self) -> &types::Int {
+        unsafe { types::Int::from_raw(LLVMInt64TypeInContext(self.as_raw())) }
     }
 
-    pub fn integer_type(&self, num_bits: u32) -> &types::Integer {
-        unsafe { types::Integer::from_raw(LLVMIntTypeInContext(self.as_raw(), num_bits)) }
+    pub fn i128_type(&self) -> &types::Int {
+        unsafe { types::Int::from_raw(LLVMInt128TypeInContext(self.as_raw())) }
     }
 
-    /*/// Creates a constant in this context
-    /// The value must implement the trait `IntoValue`
-    pub fn cons<T: IntoConstValue>(&self, val: T) -> LLVMValueRef {
-        val.gen_const(self)
-    }*/
+    pub fn integer_type(&self, num_bits: u32) -> &types::Int {
+        unsafe { types::Int::from_raw(LLVMIntTypeInContext(self.as_raw(), num_bits)) }
+    }
 }
 
 impl Drop for Context {

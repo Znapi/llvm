@@ -55,10 +55,11 @@ use llvm_sys::initialization::*;
 use llvm_sys::target::*;
 use llvm_sys::target_machine::*;
 
-pub mod types;
 #[macro_use]
 mod string;
 mod context;
+pub mod types;
+mod constant;
 mod builder;
 mod module;
 mod pass_manager;
@@ -66,8 +67,9 @@ mod target;
 mod execution_engine;
 
 pub use string::*;
-pub use types::{Type, ContextType};
 pub use context::*;
+pub use types::{Type, ContextType};
+pub use constant::*;
 pub use builder::*;
 pub use module::*;
 pub use pass_manager::*;
