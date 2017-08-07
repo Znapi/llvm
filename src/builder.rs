@@ -19,8 +19,9 @@ pub enum IntPredicate {
 
 macro_rules! build_named_ops {
     ($($(#[$attr:meta])*pub fn $name:ident($($argn:ident: $argty:ty),*) { $llvm_fn:path })*) => {
-        /// Specifying a name is optional; just pass an empty string
-        $($(#[$attr])*pub fn $name(&mut self, $($argn: $argty),*, name: &AsRef<Str>) -> LLVMValueRef {
+        $(
+            /// Specifying a name is optional; just pass an empty string
+            $(#[$attr])*pub fn $name(&mut self, $($argn: $argty),*, name: &AsRef<Str>) -> LLVMValueRef {
             unsafe {
                 $llvm_fn(self.as_mut(),
                          $($argn),*,
@@ -51,9 +52,7 @@ impl_llvm_ref!(Builder, LLVMBuilderRef);
 
 impl Builder {
     build_named_ops! {
-        /// doc 1
         pub fn build_add(lhs: LLVMValueRef, rhs: LLVMValueRef) { LLVMBuildAdd }
-        /// doc 2
         pub fn build_sub(lhs: LLVMValueRef, rhs: LLVMValueRef) { LLVMBuildSub }
         pub fn build_mul(lhs: LLVMValueRef, rhs: LLVMValueRef) { LLVMBuildMul }
 
