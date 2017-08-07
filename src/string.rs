@@ -164,8 +164,3 @@ macro_rules! llvm_str {
         }
     }
 }
-
-/// Returns a pointer to a null byte
-macro_rules! empty_cstr {
-    () => { &mut 0i8 as *mut i8 }
-}
