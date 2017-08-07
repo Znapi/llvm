@@ -55,8 +55,9 @@ use llvm_sys::initialization::*;
 use llvm_sys::target::*;
 use llvm_sys::target_machine::*;
 
-#[macro_use] mod string;
 pub mod types;
+#[macro_use]
+mod string;
 mod context;
 mod builder;
 mod module;

@@ -2,7 +2,7 @@
 
 use std::fmt;
 use std::fmt::{Display, Debug};
-use std::ffi::CStr;
+use std::ffi::{CStr, OsStr};
 use std::mem::transmute;
 use std::ops::Deref;
 
@@ -63,6 +63,12 @@ impl AsRef<str> for Str {
                 "LLVM string contained invalid UTF-8 somehow.",
             )
         }
+    }
+}
+
+impl AsRef<OsStr> for Str {
+    fn as_ref(&self) -> &OsStr {
+        <Str as AsRef<str>>::as_ref(self).as_ref()
     }
 }
 
@@ -157,4 +163,9 @@ macro_rules! llvm_str {
             )
         }
     }
+}
+
+/// Returns a pointer to a null byte
+macro_rules! empty_cstr {
+    () => { &mut 0i8 as *mut i8 }
 }
