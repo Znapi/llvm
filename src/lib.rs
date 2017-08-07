@@ -45,6 +45,9 @@ macro_rules! impl_llvm_ref {
     }
 }
 
+/// Convenience type
+pub type Result<T> = std::result::Result<T, llvm::String>;
+
 // Import all of llvm_sys. All (direct) submodules can simply import `super::*`
 // to be able to use anything from llvm_sys.
 use llvm_sys::prelude::*;
@@ -79,6 +82,3 @@ pub use execution_engine::*;
 
 // hacky namespacing follows:
 use string as llvm; // so we can do llvm::String in submodules to refer to string::String
-
-/// Convenience type
-pub type Result<T> = std::result::Result<T, llvm::String>;
