@@ -46,18 +46,14 @@ pub enum Kind<'a> {
 /// The "superclass" of the LLVM base types. Types can only be passed as
 /// immutable references, `&Type`s.
 ///
+/// `&Type`s are constructed using the `*_type` methods on a `Context`
+///
 /// # Ownership
 ///
 /// `Type`s are owned by `Context` instances such that only one instance of a
 /// specific `Type` exists per `Context`, e.g. only 1 `Float` instance exists
 /// per `Context`. Once created, `Type`s are never mutated nor destroyed,
 /// living for the lifetime of the `Context` that they belong to.
-///
-/// # Construction
-///
-/// `&Type`s can be constructed in two ways: using the `*_type` methods on a
-/// `Context`, or using the `get_type_in_context` on a type that implements it,
-/// e.g. `i64::get_type_in_context(&context)`.
 ///
 /// # Casting to and from Subtypes
 ///
@@ -413,43 +409,3 @@ impl_type!(Pointer);
 /// SIMD 'packed' format, or other vector type
 pub struct Vector(Type);
 impl_type!(Vector);
-
-/// Trait marking types that can be represented as an LLVM type.
-pub trait ContextType {
-    type LlvmType;
-
-    /// Gets a reference to the corresponding LLVM type.
-    fn get_type_in_context<'a>(context: &'a Context) -> &'a Self::LlvmType;
-}
-
-macro_rules! impl_context_type {
-    ($t: ty => $llvm_type: ty, $to_type_in_context: ident) => {
-        impl ContextType for $t {
-            type LlvmType = $llvm_type;
-
-            fn get_type_in_context<'a>(context: &'a Context) -> &'a Self::LlvmType {
-                unsafe {
-                    Self::LlvmType::from_raw($to_type_in_context(context.as_raw()))
-                }
-            }
-        }
-    }
-}
-
-impl_context_type!(bool => UInt, LLVMInt1TypeInContext);
-// This might actually not be true, Not sure
-impl_context_type!(char => Int, LLVMInt8TypeInContext);
-impl_context_type!(u8 => UInt, LLVMInt8TypeInContext);
-impl_context_type!(u16 => UInt, LLVMInt16TypeInContext);
-impl_context_type!(u32 => UInt, LLVMInt32TypeInContext);
-impl_context_type!(u64 => UInt, LLVMInt64TypeInContext);
-impl_context_type!(i8 => Int, LLVMInt8TypeInContext);
-impl_context_type!(i16 => Int, LLVMInt16TypeInContext);
-impl_context_type!(i32 => Int, LLVMInt32TypeInContext);
-impl_context_type!(i64 => Int, LLVMInt64TypeInContext);
-impl_context_type!(f32 => Float, LLVMFloatTypeInContext);
-impl_context_type!(f64 => Double, LLVMDoubleTypeInContext);
-//TODO: Function Types
-//TODO: Structure Types
-//TODO: Sequential Types
-//TODO: Other Types

@@ -71,7 +71,7 @@ mod execution_engine;
 
 pub use string::*;
 pub use context::*;
-pub use types::{Type, ContextType};
+pub use types::Type;
 pub use constant::*;
 pub use builder::*;
 pub use builder::IntPredicate;
