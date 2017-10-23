@@ -99,8 +99,6 @@ macro_rules! try_as_fns {
             /// # Example
             ///
             /// ```rust
-            /// use llvm::ContextType;
-            ///
             /// # fn main() {
             /// # let context = llvm::Context::new();
             /// let generic_type: &llvm::Type = context.i16_type(); // upcast
@@ -133,8 +131,6 @@ impl Type {
     /// # Example
     ///
     /// ```rust
-    /// use llvm::ContextType;
-    ///
     /// # fn main() {
     /// # let context = llvm::Context::new();
     /// let generic_type: &llvm::Type = context.i16_type(); // upcast
