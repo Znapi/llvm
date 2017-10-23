@@ -1,5 +1,6 @@
 extern crate llvm_sys;
-#[macro_use]extern crate llvm;
+#[macro_use]
+extern crate llvm;
 
 use std::mem;
 
@@ -14,10 +15,7 @@ fn main() {
     let func = module.add_function(
         llvm::types::Function::new(
             context.i64_type(),
-            &[
-                context.i64_type(),
-                context.i64_type(),
-            ],
+            &[context.i64_type(), context.i64_type()],
             false,
         ),
         func_name,
@@ -39,7 +37,7 @@ fn main() {
     llvm::initialize_native_target();
     llvm::initialize_native_asm_printer();
 
-    let ee = llvm::ExecutionEngine::create_for_module(&module).unwrap();
+    let ee = llvm::ExecutionEngine::create_for_module(module).unwrap();
     let addr = ee.get_function_address(func_name).unwrap();
 
     unsafe {

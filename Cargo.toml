@@ -16,5 +16,5 @@ travis-ci = { repository = "gsingh93/llvm" }
 appveyor = { repository = "gsingh93/llvm" }
 
 [dependencies]
-llvm-sys = "40.0.3"
+llvm-sys = "50.0.0"
 libc = "*"

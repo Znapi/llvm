@@ -10,18 +10,21 @@ pub struct ExecutionEngine {
 impl_llvm_ref!(ExecutionEngine, LLVMExecutionEngineRef);
 
 impl ExecutionEngine {
-    pub fn create_for_module(module: &Module) -> Result<ExecutionEngine> {
+    /// Creates an execution engine for the given module. The `ExecutionEngine`
+    /// takes ownership of the module.
+    pub fn create_for_module(module: Module) -> Result<ExecutionEngine> {
         unsafe {
             let mut ee = mem::uninitialized();
             let mut out = mem::zeroed();
 
             let res = LLVMCreateExecutionEngineForModule(&mut ee, module.as_raw(), &mut out);
 
-            if res == 0 {
-                // no error message was set
+            if res == 0 { // if no errors
+                mem::forget(module);
                 Ok(Self::from_raw(ee))
             } else {
                 Err(llvm::String::from_mut(out))
+                // module is implicitly disposed
             }
         }
     }
