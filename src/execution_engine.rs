@@ -23,15 +23,15 @@ impl ExecutionEngine {
                 mem::forget(module);
                 Ok(Self::from_raw(ee))
             } else {
-                Err(llvm::String::from_mut(out))
+                Err(String::from_mut(out))
                 // module is implicitly disposed
             }
         }
     }
 
-    pub fn get_function_address(&self, fname: &AsRef<Str>) -> Option<extern "C" fn()> {
+    pub fn get_function_address<T: Borrow<Str>>(&self, fname: &T) -> Option<extern "C" fn()> {
         unsafe {
-            let addr = LLVMGetFunctionAddress(self.ptr, fname.as_ref().as_ptr());
+            let addr = LLVMGetFunctionAddress(self.ptr, fname.borrow().as_ptr());
 
             if addr == 0 {
                 None

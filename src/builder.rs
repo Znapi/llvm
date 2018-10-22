@@ -21,11 +21,11 @@ macro_rules! build_named_ops {
     ($($(#[$attr:meta])*pub fn $name:ident($($argn:ident: $argty:ty),*) { $llvm_fn:path })*) => {
         $(
             /// Specifying a name is optional; just pass an empty string
-            $(#[$attr])*pub fn $name(&mut self, $($argn: $argty),*, name: &AsRef<Str>) -> LLVMValueRef {
+            $(#[$attr])*pub fn $name(&mut self, $($argn: $argty),*, name: &Str) -> LLVMValueRef {
             unsafe {
                 $llvm_fn(self.as_mut(),
                          $($argn),*,
-                         name.as_ref().as_ptr())
+                         name.as_ptr())
             }
         })*
     }
@@ -181,28 +181,28 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
                              else_: LLVMBasicBlockRef) { LLVMBuildCondBr }
     }
 
-    pub fn build_zext(
+    pub fn build_zext<T: Borrow<Str>>(
         &mut self,
         val: LLVMValueRef,
         dst_ty: &Type,
-        name: &AsRef<Str>,
+        name: &T,
     ) -> LLVMValueRef {
         unsafe {
             LLVMBuildZExt(
                 self.as_mut(),
                 val,
                 dst_ty.into(),
-                name.as_ref().as_ptr(),
+                name.borrow().as_ptr(),
             )
         }
     }
 
-    pub fn build_icmp(
+    pub fn build_icmp<T: Borrow<Str>>(
         &mut self,
         op: IntPredicate,
         lhs: LLVMValueRef,
         rhs: LLVMValueRef,
-        name: &AsRef<Str>,
+        name: &T,
     ) -> LLVMValueRef {
         unsafe {
             LLVMBuildICmp(
@@ -210,7 +210,7 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
                 transmute(op),
                 lhs,
                 rhs,
-                name.as_ref().as_ptr(),
+                name.borrow().as_ptr(),
             )
         }
     }
@@ -225,11 +225,11 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
         }
     }
 
-    pub fn build_call(
+    pub fn build_call<T: Borrow<Str>>(
         &mut self,
         func: LLVMValueRef,
         args: &[LLVMValueRef],
-        name: &AsRef<Str>,
+        name: &T
     ) -> LLVMValueRef {
         unsafe {
             LLVMBuildCall(
@@ -237,35 +237,35 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
                 func,
                 args.as_ptr() as *mut LLVMValueRef,
                 args.len() as u32,
-                name.as_ref().as_ptr(),
+                name.borrow().as_ptr(),
             )
         }
     }
 
-    pub fn build_global_string(&self, s: &AsRef<Str>, name: &AsRef<Str>) -> LLVMValueRef {
-        unsafe { LLVMBuildGlobalString(self.as_raw(), s.as_ref().as_ptr(), name.as_ref().as_ptr()) }
+    pub fn build_global_string<S: Borrow<Str>, T: Borrow<Str>>(&self, s: &S, name: &T) -> LLVMValueRef {
+        unsafe { LLVMBuildGlobalString(self.as_raw(), s.borrow().as_ptr(), name.borrow().as_ptr()) }
     }
 
-    // NOTE: requires a function and basic block to be present
-    pub fn build_global_string_ptr(
+    /// NOTE: requires a function and basic block to be present
+    pub fn build_global_string_ptr<S: Borrow<Str>, T: Borrow<Str>>(
         &self,
-        s: &AsRef<Str>,
-        name: &AsRef<Str>,
+        s: &S,
+        name: &T
     ) -> LLVMValueRef {
         unsafe {
             LLVMBuildGlobalStringPtr(
                 self.as_raw(),
-                s.as_ref().as_ptr(),
-                name.as_ref().as_ptr(),
+                s.borrow().as_ptr(),
+                name.borrow().as_ptr(),
             )
         }
     }
 
-    pub fn build_in_bounds_gep(
+    pub fn build_in_bounds_gep<T: Borrow<Str>>(
         &self,
         ptr: LLVMValueRef,
         mut indices: Vec<LLVMValueRef>,
-        name: &AsRef<Str>,
+        name: &T
     ) -> LLVMValueRef {
         unsafe {
             LLVMBuildInBoundsGEP(
@@ -273,15 +273,15 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
                 ptr,
                 indices.as_mut_ptr(),
                 indices.len() as u32,
-                name.as_ref().as_ptr(),
+                name.borrow().as_ptr(),
             )
         }
     }
-    pub fn build_gep(
+    pub fn build_gep<T: Borrow<Str>>(
         &self,
         ptr: LLVMValueRef,
         mut indices: Vec<LLVMValueRef>,
-        name: &AsRef<Str>,
+        name: &T,
     ) -> LLVMValueRef {
         unsafe {
             LLVMBuildGEP(
@@ -289,7 +289,7 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
                 ptr,
                 indices.as_mut_ptr(),
                 indices.len() as u32,
-                name.as_ref().as_ptr(),
+                name.borrow().as_ptr(),
             )
         }
     }

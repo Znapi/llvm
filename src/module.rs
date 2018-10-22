@@ -14,40 +14,40 @@ impl Module {
         unsafe { LLVMDumpModule(self.as_raw()) };
     }
 
-    pub fn set_data_layout_str(&mut self, data_layout_str: &AsRef<Str>) {
-        unsafe { LLVMSetDataLayout(self.as_mut(), data_layout_str.as_ref().as_ptr()) };
+    pub fn set_data_layout_str<T: Borrow<Str>>(&mut self, data_layout_str: &T) {
+        unsafe { LLVMSetDataLayout(self.as_mut(), data_layout_str.borrow().as_ptr()) };
     }
 
     pub fn set_data_layout(&mut self, data_layout: &TargetData) {
         unsafe { LLVMSetModuleDataLayout(self.as_mut(), data_layout.as_raw()) };
     }
 
-    pub fn get_target_triple(&self) -> &'static llvm::Str {
-        unsafe { llvm::Str::from_ptr(LLVMGetTarget(self.as_raw())) }
+    pub fn get_target_triple(&self) -> &'static Str {
+        unsafe { Str::from_ptr(LLVMGetTarget(self.as_raw())) }
     }
 
-    pub fn set_target_triple(&mut self, triple: &AsRef<Str>) {
-        unsafe { LLVMSetTarget(self.as_mut(), triple.as_ref().as_ptr()) };
+    pub fn set_target_triple<T: Borrow<Str>>(&mut self, triple: &T) {
+        unsafe { LLVMSetTarget(self.as_mut(), triple.borrow().as_ptr()) };
     }
 
-    pub fn add_function(&mut self, func_ty: &types::Function, name: &AsRef<Str>) -> LLVMValueRef {
-        unsafe { LLVMAddFunction(self.as_mut(), name.as_ref().as_ptr(), func_ty.into()) }
+    pub fn add_function<T: Borrow<Str>>(&mut self, func_ty: &types::Function, name: &T) -> LLVMValueRef {
+        unsafe { LLVMAddFunction(self.as_mut(), name.borrow().as_ptr(), func_ty.into()) }
     }
 
-    pub fn print_to_file(&self, path: &AsRef<Str>) -> Result<()> {
+    pub fn print_to_file<T: Borrow<Str>>(&self, path: &T) -> Result<()> {
         let mut em: usize = 0;
         let em_ptr: *mut usize = &mut em;
         unsafe {
             LLVMPrintModuleToFile(
                 self.as_raw(),
-                path.as_ref().as_ptr(),
+                path.borrow().as_ptr(),
                 em_ptr as *mut *mut i8,
             );
             if em == 0 {
                 // no error message was set
                 Ok(())
             } else {
-                Err(llvm::String::from_mut(em_ptr as *mut i8))
+                Err(String::from_mut(em_ptr as *mut i8))
             }
         }
     }
@@ -59,7 +59,7 @@ impl fmt::Display for Module {
             write!(
                 f,
                 "{}",
-                llvm::String::from_mut(LLVMPrintModuleToString(self.as_raw()))
+                String::from_mut(LLVMPrintModuleToString(self.as_raw()))
             )
         }
     }

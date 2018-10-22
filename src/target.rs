@@ -57,8 +57,8 @@ impl Target {
     // LLVMGetTargetFromName returns 0 for failure, but because it isn't using
     // error messages, this function just uses an Option rather than a Result
     // to signify failure.
-    pub fn from_name(name: &AsRef<Str>) -> Option<Target> {
-        let res = unsafe { LLVMGetTargetFromName(name.as_ref().as_ptr()) };
+    pub fn from_name<T: Borrow<Str>>(name: &T) -> Option<Target> {
+        let res = unsafe { LLVMGetTargetFromName(name.borrow().as_ptr()) };
 
         if res.is_null() {
             None
@@ -67,28 +67,28 @@ impl Target {
         }
     }
 
-    pub fn from_triple(triple: &AsRef<Str>) -> Result<Target> {
+    pub fn from_triple<T: Borrow<Str>>(triple: &T) -> Result<Target> {
         unsafe {
             let mut target_ptr: LLVMTargetRef = mem::uninitialized();
             let mut err_msg = ptr::null_mut::<i8>();
             LLVMGetTargetFromTriple(
-                triple.as_ref().as_ptr(),
+                triple.borrow().as_ptr(),
                 &mut target_ptr,
                 &mut err_msg as *mut *mut i8,
             );
             if target_ptr.is_null() {
-                Err(llvm::String::from_mut(err_msg))
+                Err(String::from_mut(err_msg))
             } else {
                 Ok(Self::from_raw(target_ptr))
             }
         }
     }
 
-    pub fn create_target_machine(
+    pub fn create_target_machine<T: Borrow<Str>, U: Borrow<Str>, V: Borrow<Str>>(
         &self,
-        triple: &AsRef<Str>,
-        cpu: &AsRef<Str>,
-        features: &AsRef<Str>,
+        triple: &T,
+        cpu: &U,
+        features: &V,
         level: CodeGenOptLevel,
         reloc: RelocMode,
         model: CodeModel,
@@ -96,9 +96,9 @@ impl Target {
         unsafe {
             TargetMachine::new(
                 self,
-                triple,
-                cpu,
-                features,
+                triple.borrow(),
+                cpu.borrow(),
+                features.borrow(),
                 mem::transmute(level),
                 mem::transmute(reloc),
                 mem::transmute(model),
@@ -115,11 +115,11 @@ pub struct TargetMachine {
 impl_llvm_ref!(TargetMachine, LLVMTargetMachineRef);
 
 impl TargetMachine {
-    pub fn new(
+    pub fn new<T: Borrow<Str>, U: Borrow<Str>, V: Borrow<Str>>(
         target: &Target,
-        triple: &AsRef<Str>,
-        cpu: &AsRef<Str>,
-        features: &AsRef<Str>,
+        triple: &T,
+        cpu: &U,
+        features: &V,
         level: CodeGenOptLevel,
         reloc: RelocMode,
         model: CodeModel,
@@ -128,9 +128,9 @@ impl TargetMachine {
             ptr: unsafe {
                 LLVMCreateTargetMachine(
                     target.ptr,
-                    triple.as_ref().as_ptr(),
-                    cpu.as_ref().as_ptr(),
-                    features.as_ref().as_ptr(),
+                    triple.borrow().as_ptr(),
+                    cpu.borrow().as_ptr(),
+                    features.borrow().as_ptr(),
                     mem::transmute(level),
                     mem::transmute(reloc),
                     mem::transmute(model),
@@ -143,10 +143,10 @@ impl TargetMachine {
         unsafe { TargetData { ptr: LLVMCreateTargetDataLayout(self.as_raw()) } }
     }
 
-    pub fn emit_to_file(
+    pub fn emit_to_file<T: Borrow<Str>>(
         &mut self,
         module: &mut Module,
-        path: &AsRef<Str>,
+        path: &T,
         file_type: CodeGenFileType,
     ) -> Result<()> {
         let mut err_msg = ptr::null_mut::<i8>();
@@ -154,7 +154,7 @@ impl TargetMachine {
             LLVMTargetMachineEmitToFile(
                 self.as_mut(),
                 module.as_mut(),
-                path.as_ref().as_ptr() as *mut i8,
+                path.borrow().as_mut(),
                 mem::transmute(file_type),
                 &mut err_msg as *mut *mut i8,
             );
@@ -162,7 +162,7 @@ impl TargetMachine {
                 // no error message was set
                 Ok(())
             } else {
-                Err(llvm::String::from_mut(err_msg))
+                Err(String::from_mut(err_msg))
             }
         }
     }
@@ -195,8 +195,8 @@ impl Drop for TargetData {
 ///   CPU_TYPE-VENDOR-OPERATING_SYSTEM
 /// or
 ///   CPU_TYPE-VENDOR-KERNEL-OPERATING_SYSTEM
-pub fn get_default_target_triple() -> llvm::String {
-    unsafe { llvm::String::from_mut(LLVMGetDefaultTargetTriple()) }
+pub fn get_default_target_triple() -> String {
+    unsafe { String::from_mut(LLVMGetDefaultTargetTriple()) }
 }
 
 pub fn initialize_all_target_infos() {

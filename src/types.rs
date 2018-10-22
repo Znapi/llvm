@@ -204,7 +204,7 @@ impl fmt::Display for Type {
             write!(
                 f,
                 "{}",
-                llvm::String::from_mut(LLVMPrintTypeToString(self.into()))
+                String::from_mut(LLVMPrintTypeToString(self.into()))
             )
         }
     }

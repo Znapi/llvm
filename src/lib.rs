@@ -1,9 +1,14 @@
 //! A safe Rust API to LLVM.
+#![feature(const_fn)]
+#![feature(const_transmute)]
+
 extern crate libc;
 extern crate llvm_sys;
+use std::borrow::Borrow; // needed for Str
 
+// TODO: pub(crate) only
 /// Trait denoting types that wrap an LLVM*Ref.
-pub(crate) trait LLVMRef {
+pub trait LLVMRef {
     /// The LLVM*Ref type that the implementing type wraps.
     type LLVMRef;
 
@@ -46,7 +51,7 @@ macro_rules! impl_llvm_ref {
 }
 
 /// Convenience type
-pub type Result<T> = std::result::Result<T, llvm::String>;
+pub type Result<T> = std::result::Result<T, String>;
 
 // Import all of llvm_sys. All (direct) submodules can simply import `super::*`
 // to be able to use anything from llvm_sys.
@@ -79,6 +84,3 @@ pub use module::*;
 pub use pass_manager::*;
 pub use target::*;
 pub use execution_engine::*;
-
-// hacky namespacing follows:
-use string as llvm; // so we can do llvm::String in submodules to refer to string::String

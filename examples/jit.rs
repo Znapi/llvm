@@ -8,10 +8,10 @@ use llvm_sys::core::LLVMGetParam;
 
 fn main() {
     let mut context = llvm::Context::new();
-    let mut module = context.create_module_with_name(llvm_str!("my module"));
+    let mut module = context.create_module_with_name(llvmstr!("my module"));
     let mut builder = context.create_builder();
 
-    let func_name = llvm_str!("add");
+    let func_name = llvmstr!("add");
     let func = module.add_function(
         llvm::types::Function::new(
             context.i64_type(),
@@ -28,7 +28,7 @@ fn main() {
         let x = LLVMGetParam(func, 0);
         let y = LLVMGetParam(func, 1);
 
-        let s1 = builder.build_add(x, y, llvm_str!("s1"));
+        let s1 = builder.build_add(x, y, llvmstr!("s1"));
         builder.build_ret(s1);
     }
     module.dump();

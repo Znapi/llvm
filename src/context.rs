@@ -19,10 +19,10 @@ impl Context {
         unsafe { Builder::from_raw(LLVMCreateBuilderInContext(self.as_mut())) }
     }
 
-    pub fn create_module_with_name(&mut self, name: &AsRef<Str>) -> Module {
+    pub fn create_module_with_name<T: Borrow<Str>>(&mut self, name: &T) -> Module {
         unsafe {
             Module::from_raw(LLVMModuleCreateWithNameInContext(
-                name.as_ref().as_ptr(),
+                name.borrow().as_ptr(),
                 self.as_mut(),
             ))
         }
@@ -32,9 +32,9 @@ impl Context {
     pub fn append_basic_block(
         &mut self,
         func: LLVMValueRef,
-        name: &AsRef<Str>,
+        name: &Str,
     ) -> LLVMBasicBlockRef {
-        unsafe { LLVMAppendBasicBlockInContext(self.as_mut(), func, name.as_ref().as_ptr()) }
+        unsafe { LLVMAppendBasicBlockInContext(self.as_mut(), func, name.as_ptr()) }
     }
 
     /// Returns a reference to the `types::Void` instance for an instance of
