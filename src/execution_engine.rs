@@ -19,7 +19,8 @@ impl ExecutionEngine {
 
             let res = LLVMCreateExecutionEngineForModule(&mut ee, module.as_raw(), &mut out);
 
-            if res == 0 { // if no errors
+            if res == 0 {
+                // if no errors
                 mem::forget(module);
                 Ok(Self::from_raw(ee))
             } else {

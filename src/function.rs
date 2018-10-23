@@ -8,9 +8,7 @@ pub struct Function {
 
 impl Function {
     pub fn from_value_ref(p: LLVMValueRef) -> Function {
-        Function {
-            ptr: p
-        }
+        Function { ptr: p }
     }
 
     pub fn params(&self) -> FunctionParamIter {
@@ -23,17 +21,14 @@ impl Function {
     // TODO: Check if there is an optimization so that we could
     // call func.params().nth(1) and call this function
     pub fn get_param(&self, index: u32) -> Option<LLVMValueRef> {
-        let p = unsafe {
-            llvm::LLVMGetParam(self.ptr, index)
-        };
+        let p = unsafe { llvm::LLVMGetParam(self.ptr, index) };
 
         if p.is_null() {
             return None;
-        } else  {
+        } else {
             return Some(p);
         }
     }
-
 }
 
 

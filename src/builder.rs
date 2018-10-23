@@ -187,14 +187,7 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
         dst_ty: &Type,
         name: &T,
     ) -> LLVMValueRef {
-        unsafe {
-            LLVMBuildZExt(
-                self.as_mut(),
-                val,
-                dst_ty.into(),
-                name.borrow().as_ptr(),
-            )
-        }
+        unsafe { LLVMBuildZExt(self.as_mut(), val, dst_ty.into(), name.borrow().as_ptr()) }
     }
 
     pub fn build_icmp<T: Borrow<Str>>(
@@ -229,7 +222,7 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
         &mut self,
         func: LLVMValueRef,
         args: &[LLVMValueRef],
-        name: &T
+        name: &T,
     ) -> LLVMValueRef {
         unsafe {
             LLVMBuildCall(
@@ -242,7 +235,11 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
         }
     }
 
-    pub fn build_global_string<S: Borrow<Str>, T: Borrow<Str>>(&self, s: &S, name: &T) -> LLVMValueRef {
+    pub fn build_global_string<S: Borrow<Str>, T: Borrow<Str>>(
+        &self,
+        s: &S,
+        name: &T,
+    ) -> LLVMValueRef {
         unsafe { LLVMBuildGlobalString(self.as_raw(), s.borrow().as_ptr(), name.borrow().as_ptr()) }
     }
 
@@ -250,14 +247,10 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
     pub fn build_global_string_ptr<S: Borrow<Str>, T: Borrow<Str>>(
         &self,
         s: &S,
-        name: &T
+        name: &T,
     ) -> LLVMValueRef {
         unsafe {
-            LLVMBuildGlobalStringPtr(
-                self.as_raw(),
-                s.borrow().as_ptr(),
-                name.borrow().as_ptr(),
-            )
+            LLVMBuildGlobalStringPtr(self.as_raw(), s.borrow().as_ptr(), name.borrow().as_ptr())
         }
     }
 
@@ -265,7 +258,7 @@ pub fn build_fence, LLVMBuildFence, ordering: LLVMAtomicOrdering,
         &self,
         ptr: LLVMValueRef,
         mut indices: Vec<LLVMValueRef>,
-        name: &T
+        name: &T,
     ) -> LLVMValueRef {
         unsafe {
             LLVMBuildInBoundsGEP(

@@ -30,7 +30,11 @@ impl Module {
         unsafe { LLVMSetTarget(self.as_mut(), triple.borrow().as_ptr()) };
     }
 
-    pub fn add_function<T: Borrow<Str>>(&mut self, func_ty: &types::Function, name: &T) -> LLVMValueRef {
+    pub fn add_function<T: Borrow<Str>>(
+        &mut self,
+        func_ty: &types::Function,
+        name: &T,
+    ) -> LLVMValueRef {
         unsafe { LLVMAddFunction(self.as_mut(), name.borrow().as_ptr(), func_ty.into()) }
     }
 

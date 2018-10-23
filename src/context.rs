@@ -29,12 +29,12 @@ impl Context {
     }
 
     /// Specifying a name is optional; just pass an empty string
-    pub fn append_basic_block(
+    pub fn append_basic_block<T: Borrow<Str>>(
         &mut self,
         func: LLVMValueRef,
-        name: &Str,
+        name: &T,
     ) -> LLVMBasicBlockRef {
-        unsafe { LLVMAppendBasicBlockInContext(self.as_mut(), func, name.as_ptr()) }
+        unsafe { LLVMAppendBasicBlockInContext(self.as_mut(), func, name.borrow().as_ptr()) }
     }
 
     /// Returns a reference to the `types::Void` instance for an instance of
